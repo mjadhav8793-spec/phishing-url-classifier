@@ -1,0 +1,8 @@
+phishing-url-classifier/
+│
+├── data/                 # We will save our dataset here
+├── models/               # We will save our trained AI model here
+├── train_model.py        # The script to train the AI
+├── app.py                # The web application frontend
+├── requirements.txt      # List of dependencies
+└── README.md             # Your GitHub presentation page
