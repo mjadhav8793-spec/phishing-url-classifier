@@ -23,11 +23,18 @@ def extract_features(url):
     return features
 
 # Load the trained model
+import os
+
 @st.cache_resource
 def load_model():
-    try:
+    # Try looking in the models folder first
+    if os.path.exists('models/phishing_rf_model.pkl'):
         return joblib.load('models/phishing_rf_model.pkl')
-    except:
+    # If not there, try looking in the main folder
+    elif os.path.exists('phishing_rf_model.pkl'):
+        return joblib.load('phishing_rf_model.pkl')
+    # If it still fails, return None
+    else:
         return None
 
 model = load_model()
