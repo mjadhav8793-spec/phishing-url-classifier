@@ -3,43 +3,44 @@ import pandas as pd
 import joblib
 import re
 from urllib.parse import urlparse
+import os
 
-# Feature Extraction Function (Must match the training script exactly)
+# 1. Feature Extraction Function (Must match the training script exactly)
 def extract_features(url):
     features = {}
+    
+    # Lexical Features
     features['url_length'] = len(url)
     features['num_dots'] = url.count('.')
     features['num_hyphens'] = url.count('-')
     features['num_digits'] = sum(c.isdigit() for c in url)
     
+    # Network Features
     parsed_url = urlparse(url)
     features['has_https'] = 1 if parsed_url.scheme == 'https' else 0
     features['has_ip'] = 1 if re.match(r'\d+\.\d+\.\d+\.\d+', parsed_url.netloc) else 0
     
+    # Keyword Features
     suspicious_words = ['login', 'update', 'free', 'urgent', 'secure', 'billing']
     for word in suspicious_words:
         features[f'has_{word}'] = 1 if word in url.lower() else 0
         
     return features
 
-# Load the trained model
-import os
-
+# 2. Load the trained model safely
 @st.cache_resource
 def load_model():
-    # Try looking in the models folder first
-    if os.path.exists('models/phishing_rf_model.pkl'):
-        return joblib.load('models/phishing_rf_model.pkl')
-    # If not there, try looking in the main folder
-    elif os.path.exists('phishing_rf_model.pkl'):
+    # Check main directory first
+    if os.path.exists('phishing_rf_model.pkl'):
         return joblib.load('phishing_rf_model.pkl')
-    # If it still fails, return None
-    else:
-        return None
+    # Check models folder next
+    elif os.path.exists('models/phishing_rf_model.pkl'):
+        return joblib.load('models/phishing_rf_model.pkl')
+    return None
 
 model = load_model()
 
-# Streamlit UI
+# 3. Streamlit User Interface
 st.set_page_config(page_title="Phishing URL Detector", page_icon="🛡️")
 
 st.title("🛡️ AI Phishing & Malware URL Detector")
@@ -51,14 +52,14 @@ if st.button("Analyze URL"):
     if not url_input:
         st.warning("Please enter a URL to analyze.")
     elif model is None:
-        st.error("Model not found! Please run train_model.py first.")
+        st.error("Model file (phishing_rf_model.pkl) not found! Please ensure it is uploaded to your GitHub repository.")
     else:
         # Extract features and predict
         features = extract_features(url_input)
         features_df = pd.DataFrame([features])
         
         prediction = model.predict(features_df)[0]
-        probability = model.predict_proba(features_df)[0][1] # Probability of being class 1 (Phishing)
+        probability = model.predict_proba(features_df)[0][1]
         
         st.divider()
         
@@ -70,6 +71,6 @@ if st.button("Analyze URL"):
             
         st.metric(label="Threat Probability Score", value=f"{probability * 100:.1f}%")
         
-        # Show the features the AI looked at
+        # Show the features the AI evaluated
         with st.expander("View Extracted URL Features"):
             st.json(features)
